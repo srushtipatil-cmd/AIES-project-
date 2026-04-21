@@ -1,0 +1,2656 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProctorAI — Intelligent Ex21am Proctoring</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;500;600&family=Rajdhani:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════
+   DESIGN SYSTEM — TACTICAL SURVEILLANCE AESTHETIC
+═══════════════════════════════════════════════════════ */
+    :root {
+      --bg: #04090e;
+      --deep: #070f18;
+      --surface: #0a1620;
+      --panel: #0e1e2e;
+      --panel2: #112438;
+      --border: #163350;
+      --border2: #1e4570;
+      --green: #00ff88;
+      --green-dim: #00cc66;
+      --green-bg: rgba(0, 255, 136, 0.06);
+      --cyan: #00d4ff;
+      --cyan-dim: #0099cc;
+      --amber: #ffbb00;
+      --amber-bg: rgba(255, 187, 0, 0.08);
+      --red: #ff2244;
+      --red-dim: #cc1133;
+      --red-bg: rgba(255, 34, 68, 0.08);
+      --text: #c0d8f0;
+      --text-dim: #5a7a9a;
+      --text-muted: #2a4a6a;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-head: 'Orbitron', monospace;
+      --font-ui: 'Rajdhani', sans-serif;
+      --radius: 6px;
+      --glow-g: 0 0 20px rgba(0, 255, 136, 0.25);
+      --glow-c: 0 0 20px rgba(0, 212, 255, 0.25);
+      --glow-r: 0 0 20px rgba(255, 34, 68, 0.3);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      overflow-x: hidden;
+    }
+
+    /* Scanlines overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 200, 255, 0.008) 3px, rgba(0, 200, 255, 0.008) 4px);
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Grid background */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(0, 180, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 180, 255, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── VIEWS ─────────────────────────────────────────────── */
+    .view {
+      display: none;
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    #view-login.active,
+    #view-identity.active {
+      display: flex;
+    }
+
+    #view-login,
+    #view-identity {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    /* ══ SCROLLBAR ══════════════════════════════════════════ */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--deep);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 2px;
+    }
+
+    /* ══ TYPOGRAPHY ══════════════════════════════════════════ */
+    h1,
+    h2,
+    h3 {
+      font-family: var(--font-head);
+      letter-spacing: 0.08em;
+    }
+
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    /* ══ COMPONENTS ══════════════════════════════════════════ */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .badge-green {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+
+    .badge-amber {
+      background: var(--amber-bg);
+      color: var(--amber);
+      border: 1px solid rgba(255, 187, 0, 0.2);
+    }
+
+    .badge-red {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid rgba(255, 34, 68, 0.25);
+    }
+
+    .badge-cyan {
+      background: rgba(0, 212, 255, 0.06);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .badge.pulse::before {
+      animation: pulseDot 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulseDot {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.2;
+      }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-head);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #006644, #009955);
+      color: #fff;
+      border: 1px solid var(--green-dim);
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #009955, #00cc66);
+      box-shadow: var(--glow-g);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid var(--border2);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #660011, #aa0022);
+      color: #fff;
+      border: 1px solid var(--red-dim);
+    }
+
+    .btn-danger:hover {
+      box-shadow: var(--glow-r);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .input {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--deep);
+      color: var(--text);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    .input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1);
+    }
+
+    .input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    }
+
+    /* ══ ANIMATIONS ══════════════════════════════════════════ */
+    @keyframes fadeSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes glitch {
+
+      0%,
+      100% {
+        clip-path: inset(0 0 98% 0)
+      }
+
+      10% {
+        clip-path: inset(20% 0 60% 0)
+      }
+
+      20% {
+        clip-path: inset(80% 0 5% 0)
+      }
+
+      30% {
+        clip-path: inset(40% 0 40% 0)
+      }
+
+      40% {
+        clip-path: inset(5% 0 90% 0)
+      }
+
+      50% {
+        clip-path: inset(0 0 98% 0)
+      }
+    }
+
+    @keyframes scan {
+      from {
+        top: -100%
+      }
+
+      to {
+        top: 100%
+      }
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0
+      }
+    }
+
+    /* ══════════════════════════════════════════════════════
+   LOGIN VIEW
+══════════════════════════════════════════════════════ */
+    #view-login {
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0, 100, 60, 0.12) 0%, transparent 70%);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 440px;
+      animation: fadeSlideIn 0.6s ease-out;
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .login-logo-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 16px;
+      border: 2px solid var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: var(--glow-g);
+    }
+
+    .login-logo-icon svg {
+      width: 36px;
+      height: 36px;
+    }
+
+    .login-logo-icon::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 255, 136, 0.2);
+      animation: rotate 8s linear infinite;
+    }
+
+    @keyframes rotate {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .login-logo h1 {
+      font-size: 28px;
+      color: var(--green);
+      letter-spacing: 0.15em;
+    }
+
+    .login-logo p {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      margin-top: 4px;
+      letter-spacing: 0.12em;
+    }
+
+    .login-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 24px;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .login-tab {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-head);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      transition: all 0.2s;
+    }
+
+    .login-tab.active {
+      background: var(--panel2);
+      color: var(--green);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .login-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* ══════════════════════════════════════════════════════
+   IDENTITY VERIFICATION VIEW
+══════════════════════════════════════════════════════ */
+    #view-identity {
+      background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0, 80, 120, 0.15) 0%, transparent 70%);
+      padding: 2rem;
+    }
+
+    .identity-card {
+      width: 100%;
+      max-width: 560px;
+      animation: fadeSlideIn 0.5s ease-out;
+    }
+
+    .identity-card .panel {
+      padding: 28px;
+    }
+
+    .identity-header {
+      margin-bottom: 24px;
+    }
+
+    .identity-header h2 {
+      font-size: 18px;
+      color: var(--cyan);
+      margin-bottom: 4px;
+    }
+
+    .identity-header p {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .cam-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #000;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border2);
+      margin-bottom: 16px;
+    }
+
+    .cam-wrapper video,
+    .cam-wrapper canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cam-overlay-corners {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .cam-overlay-corners::before,
+    .cam-overlay-corners::after {
+      content: '';
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border: 2px solid var(--cyan);
+    }
+
+    .cam-overlay-corners::before {
+      top: 12px;
+      left: 12px;
+      border-right: none;
+      border-bottom: none;
+    }
+
+    .cam-overlay-corners::after {
+      bottom: 12px;
+      right: 12px;
+      border-left: none;
+      border-top: none;
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.8), transparent);
+      animation: scan 2.5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .cam-status {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--cyan);
+    }
+
+    .face-box {
+      position: absolute;
+      border: 2px solid var(--green);
+      box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
+      transition: all 0.15s;
+      pointer-events: none;
+    }
+
+    /* ══════════════════════════════════════════════════════
+   TEACHER DASHBOARD VIEW
+══════════════════════════════════════════════════════ */
+    #view-teacher {
+      padding: 0;
+    }
+
+    .teacher-layout {
+      display: grid;
+      grid-template-rows: 56px 1fr;
+      height: 100vh;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: var(--deep);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .topbar-brand span {
+      font-family: var(--font-head);
+      font-size: 14px;
+      color: var(--green);
+      letter-spacing: 0.1em;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .teacher-body {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      overflow: hidden;
+      height: calc(100vh - 56px);
+    }
+
+    .sidebar {
+      background: var(--deep);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 20px 0;
+    }
+
+    .sidebar-section {
+      padding: 0 16px 20px;
+    }
+
+    .sidebar-label {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      padding: 0 4px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-card .val {
+      font-family: var(--font-head);
+      font-size: 22px;
+      color: var(--cyan);
+    }
+
+    .stat-card .lbl {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      margin-top: 3px;
+    }
+
+    .stat-card.danger .val {
+      color: var(--red);
+    }
+
+    .stat-card.warn .val {
+      color: var(--amber);
+    }
+
+    .exam-code-display {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 8px;
+    }
+
+    .exam-code-display .code {
+      font-family: var(--font-head);
+      font-size: 28px;
+      color: var(--green);
+      text-align: center;
+      letter-spacing: 0.2em;
+    }
+
+    .exam-code-display .label {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .alert-feed {
+      padding: 0 16px;
+    }
+
+    .alert-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px;
+      border-radius: var(--radius);
+      margin-bottom: 6px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      animation: fadeSlideIn 0.3s ease-out;
+      font-size: 12px;
+    }
+
+    .alert-item.critical {
+      border-color: rgba(255, 34, 68, 0.3);
+      background: rgba(255, 34, 68, 0.05);
+    }
+
+    .alert-item.high {
+      border-color: rgba(255, 140, 0, 0.3);
+      background: rgba(255, 140, 0, 0.05);
+    }
+
+    .alert-item .alert-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .alert-item .alert-name {
+      font-weight: 600;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .alert-item .alert-detail {
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+
+    .alert-item .alert-time {
+      color: var(--text-muted);
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+
+    .main-content {
+      overflow-y: auto;
+      padding: 20px;
+      background: var(--bg);
+    }
+
+    .students-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .student-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .student-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .student-card.risk-high {
+      border-color: rgba(255, 140, 0, 0.4);
+    }
+
+    .student-card.risk-critical {
+      border-color: rgba(255, 34, 68, 0.4);
+      animation: pulseRed 2s ease-in-out infinite;
+    }
+
+    @keyframes pulseRed {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 rgba(255, 34, 68, 0);
+      }
+
+      50% {
+        box-shadow: 0 0 12px rgba(255, 34, 68, 0.3);
+      }
+    }
+
+    .student-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .student-name {
+      font-family: var(--font-head);
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .student-score-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 10px 0 8px;
+      overflow: hidden;
+    }
+
+    .student-score-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .student-meta {
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    /* ══════════════════════════════════════════════════════
+   EXAM SETUP (TEACHER)
+══════════════════════════════════════════════════════ */
+    .exam-setup-card {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .section-header h2 {
+      font-size: 16px;
+      color: var(--cyan);
+    }
+
+    /* ══════════════════════════════════════════════════════
+   EXAM VIEW (STUDENT)
+══════════════════════════════════════════════════════ */
+    #view-exam {
+      padding: 0;
+    }
+
+    .exam-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .exam-main {
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .exam-sidebar {
+      background: var(--deep);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .exam-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      background: var(--deep);
+      border-bottom: 1px solid var(--border);
+      grid-column: 1 / -1;
+    }
+
+    .exam-grid {
+      display: grid;
+      grid-template-rows: 56px 1fr;
+      height: 100vh;
+    }
+
+    .exam-body {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      overflow: hidden;
+    }
+
+    .question-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+      animation: fadeSlideIn 0.4s ease-out;
+    }
+
+    .q-number {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      letter-spacing: 0.1em;
+    }
+
+    .q-text {
+      font-size: 16px;
+      color: var(--text);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .q-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .q-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--deep);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 14px;
+    }
+
+    .q-option:hover {
+      border-color: var(--cyan-dim);
+      background: rgba(0, 212, 255, 0.04);
+    }
+
+    .q-option.selected {
+      border-color: var(--green);
+      background: rgba(0, 255, 136, 0.05);
+      color: var(--green);
+    }
+
+    .q-option input[type=radio] {
+      display: none;
+    }
+
+    .q-opt-letter {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      border: 1px solid var(--border2);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      flex-shrink: 0;
+      background: var(--panel);
+    }
+
+    .q-option.selected .q-opt-letter {
+      border-color: var(--green);
+      color: var(--green);
+      background: rgba(0, 255, 136, 0.1);
+    }
+
+    .q-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .q-nav-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .q-nav-btn:hover {
+      border-color: var(--cyan);
+    }
+
+    .q-nav-btn.answered {
+      background: rgba(0, 255, 136, 0.1);
+      border-color: var(--green-dim);
+      color: var(--green);
+    }
+
+    .q-nav-btn.current {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    /* Proctor Panel (right sidebar during exam) */
+    .proctor-panel {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .proctor-cam-wrap {
+      position: relative;
+      aspect-ratio: 4/3;
+      background: #000;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border2);
+    }
+
+    .proctor-cam-wrap video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .proctor-cam-wrap canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .proctor-cam-wrap .scan-line {
+      animation-duration: 2s;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .status-item {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .status-item .s-label {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+    }
+
+    .status-item .s-val {
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    .status-item.warn .s-val {
+      color: var(--amber);
+    }
+
+    .status-item.danger .s-val {
+      color: var(--red);
+    }
+
+    .risk-meter {
+      padding: 10px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .risk-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+    }
+
+    .risk-bar-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .risk-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s ease, background 0.4s;
+      background: var(--green);
+    }
+
+    .alerts-mini {
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .alert-mini-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 3px;
+      margin-bottom: 4px;
+      font-size: 11px;
+      background: var(--panel);
+      border-left: 2px solid var(--amber);
+      animation: fadeSlideIn 0.2s ease-out;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+    }
+
+    .alert-mini-item.critical {
+      border-left-color: var(--red);
+    }
+
+    .alert-mini-item.high {
+      border-left-color: var(--amber);
+    }
+
+    /* ══════════════════════════════════════════════════════
+   RESULTS VIEW
+══════════════════════════════════════════════════════ */
+    #view-results {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+
+    #view-results.active {
+      display: flex;
+    }
+
+    .result-card {
+      max-width: 600px;
+      width: 100%;
+      animation: fadeSlideIn 0.6s ease-out;
+    }
+
+    .result-card .panel {
+      padding: 32px;
+    }
+
+    .score-display {
+      text-align: center;
+      margin: 24px 0;
+    }
+
+    .score-big {
+      font-family: var(--font-head);
+      font-size: 72px;
+      color: var(--green);
+    }
+
+    .score-sub {
+      font-size: 14px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 24px 0;
+    }
+
+    .result-metric {
+      background: var(--deep);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      text-align: center;
+    }
+
+    .result-metric .m-val {
+      font-family: var(--font-head);
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .result-metric .m-label {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+    }
+
+    /* ══════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+══════════════════════════════════════════════════════ */
+    #toast-container {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 340px;
+    }
+
+    .toast {
+      padding: 10px 16px;
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 3.7s forwards;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.success {
+      border-color: rgba(0, 255, 136, 0.3);
+      color: var(--green);
+    }
+
+    .toast.error {
+      border-color: rgba(255, 34, 68, 0.3);
+      color: var(--red);
+    }
+
+    .toast.warn {
+      border-color: rgba(255, 187, 0, 0.3);
+      color: var(--amber);
+    }
+
+    .toast.info {
+      border-color: rgba(0, 212, 255, 0.3);
+      color: var(--cyan);
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0)
+      }
+    }
+
+    @keyframes toastOut {
+      from {
+        opacity: 1;
+      }
+
+      to {
+        opacity: 0;
+        transform: translateX(20px)
+      }
+    }
+
+    /* Timer */
+    .exam-timer {
+      font-family: var(--font-head);
+      font-size: 20px;
+      color: var(--cyan);
+      letter-spacing: 0.1em;
+    }
+
+    .exam-timer.urgent {
+      color: var(--red);
+      animation: blink 1s step-start infinite;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-family: var(--font-head);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      transition: all 0.2s;
+      margin-bottom: -1px;
+    }
+
+    .tab-btn.active {
+      color: var(--cyan);
+      border-bottom-color: var(--cyan);
+    }
+
+    .tab-pane {
+      display: none;
+    }
+
+    .tab-pane.active {
+      display: block;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0, 255, 136, 0.2);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* misc */
+    .text-center {
+      text-align: center;
+    }
+
+    .text-green {
+      color: var(--green);
+    }
+
+    .text-cyan {
+      color: var(--cyan);
+    }
+
+    .text-amber {
+      color: var(--amber);
+    }
+
+    .text-red {
+      color: var(--red);
+    }
+
+    .text-dim {
+      color: var(--text-dim);
+    }
+
+    .gap-12 {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .mb-8 {
+      margin-bottom: 8px;
+    }
+
+    .mb-16 {
+      margin-bottom: 16px;
+    }
+
+    .mt-16 {
+      margin-top: 16px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 800px) {
+      .exam-body {
+        grid-template-columns: 1fr;
+      }
+
+      .exam-sidebar {
+        display: none;
+      }
+
+      .teacher-body {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="grid-bg"></div>
+  <div id="toast-container"></div>
+
+  <!-- ══════════════════════════════════════════════════════
+     VIEW 1: LOGIN
+══════════════════════════════════════════════════════ -->
+  <div id="view-login" class="view active">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-logo-icon">
+          <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="13" r="6" stroke="#00ff88" stroke-width="1.5" />
+            <path d="M4 30c0-7.732 6.268-14 14-14s14 6.268 14 14" stroke="#00ff88" stroke-width="1.5"
+              stroke-linecap="round" />
+            <circle cx="18" cy="13" r="2.5" fill="#00ff88" />
+          </svg>
+        </div>
+        <h1>PROCTOR<span style="color:var(--cyan)">AI</span></h1>
+        <p>INTELLIGENT EXAM SURVEILLANCE SYSTEM v2.0</p>
+      </div>
+
+      <div class="panel" style="padding:28px;">
+        <div class="login-tabs mb-16" id="role-tabs">
+          <button class="login-tab active" onclick="setRole('student')">STUDENT</button>
+          <button class="login-tab" onclick="setRole('teacher')">TEACHER / PROCTOR</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input id="login-name" class="input" type="text" placeholder="Enter your name" autocomplete="off">
+        </div>
+        <div class="form-group" id="exam-code-group" style="display:none;">
+          <label class="form-label">Exam Code</label>
+          <input id="login-code" class="input" type="text" placeholder="6-digit exam code" maxlength="6"
+            style="text-transform:uppercase;letter-spacing:0.15em;">
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;margin-top:8px;" id="login-btn" onclick="handleLogin()">
+          <span>ENTER SYSTEM</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1l6 6-6 6M1 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="login-footer" style="margin-top:16px;">
+        <span class="badge badge-green pulse">SYSTEM ONLINE</span>&nbsp;&nbsp;
+        <span style="color:var(--text-muted);">ENCRYPTED · REAL-TIME MONITORING</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+     VIEW 2: IDENTITY VERIFICATION (Student)
+══════════════════════════════════════════════════════ -->
+  <div id="view-identity" class="view">
+    <div class="identity-card">
+      <div style="text-align:center;margin-bottom:20px;">
+        <h2 style="font-size:16px;color:var(--cyan);font-family:var(--font-head);letter-spacing:0.1em;">IDENTITY
+          VERIFICATION</h2>
+        <p style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);margin-top:4px;">Look directly at
+          the camera to register your face</p>
+      </div>
+      <div class="panel" style="padding:24px;">
+        <div class="cam-wrapper" style="margin-bottom:16px;">
+          <video id="identity-video" autoplay playsinline muted></video>
+          <canvas id="identity-canvas"></canvas>
+          <div class="cam-overlay-corners"></div>
+          <div class="scan-line"></div>
+          <div class="cam-status" id="identity-status">INITIALIZING CAMERA...</div>
+          <div id="identity-face-box" class="face-box hidden"></div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-bottom:16px;">
+          <div id="id-checks" style="flex:1;">
+            <div class="status-grid">
+              <div class="status-item" id="id-check-face">
+                <span class="s-label">FACE DETECTED</span>
+                <span class="s-val" id="id-face-val">SCANNING...</span>
+              </div>
+              <div class="status-item" id="id-check-light">
+                <span class="s-label">LIGHTING</span>
+                <span class="s-val" id="id-light-val">CHECKING...</span>
+              </div>
+              <div class="status-item" id="id-check-pos">
+                <span class="s-label">POSITION</span>
+                <span class="s-val" id="id-pos-val">ALIGN FACE</span>
+              </div>
+              <div class="status-item" id="id-check-quality">
+                <span class="s-label">QUALITY</span>
+                <span class="s-val" id="id-quality-val">---</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-primary" style="flex:1;" id="capture-btn" onclick="captureIdentity()" disabled>
+            <div class="spinner" id="capture-spinner" style="display:none;"></div>
+            <span id="capture-label">CAPTURE &amp; VERIFY</span>
+          </button>
+          <button class="btn btn-secondary" onclick="skipIdentity()">SKIP</button>
+        </div>
+        <p
+          style="font-size:10px;color:var(--text-muted);font-family:var(--font-mono);text-align:center;margin-top:10px;">
+          Your face data is stored locally and used only for this exam session</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+     VIEW 3: TEACHER DASHBOARD
+══════════════════════════════════════════════════════ -->
+  <div id="view-teacher" class="view">
+    <div class="teacher-layout">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-brand">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="7" r="3.5" stroke="#00ff88" stroke-width="1.2" />
+            <path d="M2 18c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#00ff88" stroke-width="1.2"
+              stroke-linecap="round" />
+            <circle cx="10" cy="7" r="1.5" fill="#00ff88" />
+          </svg>
+          <span>PROCTOR<span style="color:var(--cyan)">AI</span></span>
+          <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);margin-left:4px;">COMMAND
+            CENTER</span>
+        </div>
+        <div class="topbar-actions">
+          <span class="badge badge-green pulse" id="teacher-live-badge">LIVE</span>
+          <span style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);"
+            id="teacher-name-display"></span>
+          <button class="btn btn-secondary" style="padding:6px 14px;font-size:10px;" onclick="logout()">EXIT</button>
+        </div>
+      </header>
+
+      <!-- Body -->
+      <div class="teacher-body">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <!-- Stats -->
+          <div class="sidebar-section">
+            <div class="sidebar-label">OVERVIEW</div>
+            <div class="stat-grid mb-16">
+              <div class="stat-card">
+                <div class="val" id="stat-total">0</div>
+                <div class="lbl">STUDENTS</div>
+              </div>
+              <div class="stat-card">
+                <div class="val" id="stat-active">0</div>
+                <div class="lbl">ACTIVE</div>
+              </div>
+              <div class="stat-card warn">
+                <div class="val" id="stat-avg">0</div>
+                <div class="lbl">AVG RISK</div>
+              </div>
+              <div class="stat-card danger">
+                <div class="val" id="stat-high">0</div>
+                <div class="lbl">HIGH RISK</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Exam code -->
+          <div class="sidebar-section">
+            <div class="sidebar-label">ACTIVE EXAM</div>
+            <div id="teacher-exam-panel">
+              <div id="no-exam-msg" style="text-align:center;padding:20px 0;">
+                <p style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:12px;">No
+                  active exam</p>
+                <button class="btn btn-primary" style="font-size:10px;padding:8px 16px;"
+                  onclick="showCreateExam()">CREATE EXAM</button>
+              </div>
+              <div id="exam-code-display" class="hidden">
+                <div class="exam-code-display">
+                  <div class="label">EXAM CODE</div>
+                  <div class="code" id="active-exam-code">------</div>
+                </div>
+                <div
+                  style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);text-align:center;margin-bottom:8px;"
+                  id="exam-title-display"></div>
+                <button class="btn btn-secondary" style="width:100%;font-size:10px;padding:7px;"
+                  onclick="copyExamCode()">COPY CODE</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live alert feed -->
+          <div class="sidebar-section">
+            <div class="sidebar-label">LIVE ALERTS</div>
+            <div id="alert-feed" class="alert-feed">
+              <p style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">No alerts yet</p>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main area -->
+        <main class="main-content">
+          <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('students')">STUDENTS</button>
+            <button class="tab-btn" onclick="showTab('create-exam')">CREATE EXAM</button>
+            <button class="tab-btn" onclick="showTab('all-alerts')">ALL ALERTS</button>
+          </div>
+
+          <!-- Students tab -->
+          <div id="tab-students" class="tab-pane active">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h2 style="font-size:14px;font-family:var(--font-head);color:var(--cyan);letter-spacing:0.1em;">MONITORED
+                STUDENTS</h2>
+              <span class="badge badge-cyan" id="students-count-badge">0 ACTIVE</span>
+            </div>
+            <div id="students-grid" class="students-grid">
+              <div
+                style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);font-family:var(--font-mono);font-size:12px;">
+                No students enrolled yet. Create an exam and share the code.
+              </div>
+            </div>
+          </div>
+
+          <!-- Create exam tab -->
+          <div id="tab-create-exam" class="tab-pane">
+            <div class="exam-setup-card">
+              <div class="section-header">
+                <h2>CREATE NEW EXAM</h2>
+              </div>
+              <div class="panel" style="padding:24px;" class="gap-12">
+                <div class="form-group">
+                  <label class="form-label">Exam Title</label>
+                  <input id="exam-title-input" class="input" type="text" placeholder="e.g. Computer Science Midterm"
+                    value="ProctorAI Exam">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Duration (minutes)</label>
+                  <input id="exam-duration-input" class="input" type="number" value="30" min="5" max="180">
+                </div>
+                <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="createExam()">
+                  <span>GENERATE EXAM CODE</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- All alerts tab -->
+          <div id="tab-all-alerts" class="tab-pane">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+              <h2 style="font-size:14px;font-family:var(--font-head);color:var(--cyan);letter-spacing:0.1em;">ALL
+                SECURITY EVENTS</h2>
+              <button class="btn btn-secondary" style="font-size:10px;padding:7px 14px;"
+                onclick="loadAllAlerts()">REFRESH</button>
+            </div>
+            <div id="all-alerts-list"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+     VIEW 4: EXAM (Student)
+══════════════════════════════════════════════════════ -->
+  <div id="view-exam" class="view">
+    <div class="exam-grid">
+      <!-- Top bar -->
+      <header class="exam-topbar">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <span style="font-family:var(--font-head);font-size:13px;color:var(--green);">PROCTOR<span
+              style="color:var(--cyan)">AI</span></span>
+          <span style="font-size:12px;color:var(--text-dim);font-family:var(--font-mono);" id="exam-title-bar">EXAM IN
+            PROGRESS</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div class="exam-timer" id="exam-timer">30:00</div>
+          <span class="badge badge-red pulse" id="proctor-live-badge" style="display:none;">PROCTORED</span>
+          <button class="btn btn-danger" style="padding:7px 16px;font-size:10px;" onclick="confirmSubmit()">SUBMIT
+            EXAM</button>
+        </div>
+      </header>
+
+      <!-- Body -->
+      <div class="exam-body">
+        <!-- Questions -->
+        <div class="exam-main" id="exam-questions-area">
+          <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+            <div style="flex:1;">
+              <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-dim);margin-bottom:8px;">QUESTION
+                NAVIGATOR</div>
+              <div class="q-nav" id="q-nav"></div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-dim);margin-bottom:4px;">ANSWERED
+              </div>
+              <div style="font-family:var(--font-head);font-size:18px;color:var(--cyan);" id="answered-count">0 / 0
+              </div>
+            </div>
+          </div>
+
+          <div id="questions-container"></div>
+
+          <div style="display:flex;gap:10px;margin-top:20px;">
+            <button class="btn btn-secondary" id="prev-btn" onclick="prevQuestion()" disabled>← PREV</button>
+            <button class="btn btn-primary" style="flex:1;" id="next-btn" onclick="nextQuestion()">NEXT →</button>
+            <button class="btn btn-danger" id="final-submit-btn" style="display:none;" onclick="confirmSubmit()">SUBMIT
+              EXAM</button>
+          </div>
+        </div>
+
+        <!-- Proctor sidebar -->
+        <aside class="exam-sidebar">
+          <div class="proctor-panel">
+            <div
+              style="font-size:11px;font-family:var(--font-mono);color:var(--text-dim);text-align:center;letter-spacing:0.1em;padding-bottom:6px;border-bottom:1px solid var(--border);">
+              LIVE PROCTORING FEED</div>
+
+            <!-- Camera -->
+            <div class="proctor-cam-wrap">
+              <video id="proctor-video" autoplay playsinline muted></video>
+              <canvas id="proctor-canvas"></canvas>
+              <div class="scan-line"></div>
+            </div>
+
+            <!-- Detection stats -->
+            <div class="status-grid">
+              <div class="status-item" id="stat-gaze">
+                <span class="s-label">GAZE</span>
+                <span class="s-val" id="gaze-val">CENTER</span>
+              </div>
+              <div class="status-item" id="stat-faces">
+                <span class="s-label">FACES</span>
+                <span class="s-val" id="faces-val">1</span>
+              </div>
+              <div class="status-item" id="stat-posture">
+                <span class="s-label">POSTURE</span>
+                <span class="s-val" id="posture-val">OK</span>
+              </div>
+              <div class="status-item" id="stat-audio">
+                <span class="s-label">AUDIO</span>
+                <span class="s-val" id="audio-val">CLEAR</span>
+              </div>
+            </div>
+
+            <!-- Risk meter -->
+            <div class="risk-meter">
+              <div class="risk-label">
+                <span style="color:var(--text-dim);font-family:var(--font-mono);font-size:10px;">INTEGRITY RISK</span>
+                <span style="font-family:var(--font-head);font-size:14px;" id="risk-score-display">0</span>
+              </div>
+              <div class="risk-bar-track">
+                <div class="risk-bar-fill" id="risk-bar" style="width:0%"></div>
+              </div>
+              <div
+                style="display:flex;justify-content:space-between;font-size:9px;font-family:var(--font-mono);color:var(--text-muted);margin-top:4px;">
+                <span>LOW</span><span>MEDIUM</span><span>HIGH</span><span>CRITICAL</span>
+              </div>
+            </div>
+
+            <!-- Alert audio toggle -->
+            <div
+              style="display:flex;align-items:center;justify-content:space-between;font-size:11px;font-family:var(--font-mono);">
+              <span style="color:var(--text-dim);">AUDIO MONITOR</span>
+              <div class="audio-level-bar" style="display:flex;align-items:center;gap:2px;" id="audio-bars">
+                <div style="width:3px;height:8px;background:var(--border);border-radius:1px;" class="ab"></div>
+                <div style="width:3px;height:12px;background:var(--border);border-radius:1px;" class="ab"></div>
+                <div style="width:3px;height:16px;background:var(--border);border-radius:1px;" class="ab"></div>
+                <div style="width:3px;height:12px;background:var(--border);border-radius:1px;" class="ab"></div>
+                <div style="width:3px;height:8px;background:var(--border);border-radius:1px;" class="ab"></div>
+              </div>
+            </div>
+
+            <!-- Alerts mini feed -->
+            <div>
+              <div
+                style="font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:6px;letter-spacing:0.08em;">
+                RECENT EVENTS</div>
+              <div class="alerts-mini" id="proctor-alerts"></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+     VIEW 5: RESULTS
+══════════════════════════════════════════════════════ -->
+  <div id="view-results" class="view">
+    <div class="result-card">
+      <div class="panel">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="font-family:var(--font-head);font-size:14px;color:var(--cyan);letter-spacing:0.1em;">EXAM COMPLETE
+          </div>
+          <h2 id="result-title" style="font-size:18px;color:var(--text);margin-top:8px;"></h2>
+        </div>
+
+        <div class="score-display">
+          <div class="score-big" id="result-score">--</div>
+          <div class="score-sub" id="result-score-sub">-- / -- CORRECT</div>
+        </div>
+
+        <div class="result-grid">
+          <div class="result-metric">
+            <div class="m-val text-cyan" id="result-correct">--</div>
+            <div class="m-label">CORRECT</div>
+          </div>
+          <div class="result-metric">
+            <div class="m-val text-red" id="result-wrong">--</div>
+            <div class="m-label">INCORRECT</div>
+          </div>
+          <div class="result-metric">
+            <div class="m-val" id="result-integrity" style="color:var(--green);">--</div>
+            <div class="m-label">INTEGRITY SCORE</div>
+          </div>
+        </div>
+
+        <div id="result-integrity-banner" class="panel" style="padding:12px;margin-bottom:16px;text-align:center;">
+        </div>
+
+        <div id="result-alerts-section"></div>
+
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button class="btn btn-secondary" style="flex:1;" onclick="logout()">EXIT SYSTEM</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    //  PROCTOR AI — FRONTEND ENGINE
+    // ═══════════════════════════════════════════════════════════════
+    const API = 'http://localhost:5000';
+    let state = {
+      role: 'student',
+      userId: null,
+      userName: null,
+      examCode: null,
+      questions: [],
+      answers: {},
+      currentQ: 0,
+      examStartTs: null,
+      examDurationMin: 30,
+      riskScore: 0,
+      stream: null,
+      proctorInterval: null,
+      timerInterval: null,
+      sseSource: null,
+      monitorInterval: null,
+      tabSwitched: false,
+      fullscreenExited: false,
+      audioCtx: null,
+      analyser: null,
+      audioStream: null,
+      audioLevel: 0,
+      proctorAlerts: [],
+      faceDetectedFrames: 0,
+      faceAbsentFrames: 0,
+    };
+
+    // ── View management ─────────────────────────────────────────────
+    function showView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // ── Toast notifications ─────────────────────────────────────────
+    function toast(msg, type = 'info') {
+      const icons = { success: '✓', error: '✗', warn: '⚠', info: 'ℹ' };
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.innerHTML = `<span>${icons[type] || '·'}</span><span>${msg}</span>`;
+      document.getElementById('toast-container').appendChild(el);
+      setTimeout(() => el.remove(), 4200);
+    }
+
+    // ── API helpers ─────────────────────────────────────────────────
+    async function api(path, method = 'GET', body = null) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      try {
+        const r = await fetch(API + path, opts);
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || 'API error');
+        return j;
+      } catch (e) {
+        // Backend not available — return mock data
+        return mockApi(path, method, body);
+      }
+    }
+
+    // ── Mock API (runs without backend) ────────────────────────────
+    function mockApi(path, method, body) {
+      if (path === '/api/login') {
+        const uid = 'U' + Math.random().toString(36).substr(2, 8).toUpperCase();
+        return { user_id: uid, name: body.name, role: body.role };
+      }
+      if (path === '/api/verify_identity') {
+        return { success: true, face_score: 0.93, message: 'Identity registered ✓' };
+      }
+      if (path === '/api/create_test') {
+        const code = Math.random().toString(36).substr(2, 6).toUpperCase();
+        return { code, title: body.title, question_count: 20 };
+      }
+      if (path === '/api/join_test') {
+        return { success: true, exam_title: 'ProctorAI Demo Exam', duration_min: 30, question_count: 20 };
+      }
+      if (path === '/api/start_exam') {
+        return { success: true, questions: DEMO_QUESTIONS, duration_min: 30, start_ts: new Date().toISOString() };
+      }
+      if (path === '/api/submit_exam') {
+        const correct = Math.floor(Math.random() * 8) + 12;
+        return { success: true, correct, total: 20, score_pct: (correct / 20 * 100).toFixed(1), cheating_score: state.riskScore };
+      }
+      if (path === '/api/detect_events') {
+        const a = simulateDetection();
+        return { detections: a, cheating_score: state.riskScore, severity: getSeverity(state.riskScore), alerts_count: state.proctorAlerts.length };
+      }
+      if (path === '/api/monitor') {
+        return { students: generateMockStudents(), total_students: 5, active_exams: 1, avg_cheating_score: 22, high_risk_count: 1, ts: new Date().toISOString() };
+      }
+      if (path === '/api/alerts') return { alerts: [], count: 0 };
+      return {};
+    }
+
+    // Offline detection simulation
+    function simulateDetection() {
+      const r = Math.random;
+      return {
+        gaze_away: r() < 0.1, head_turned: r() < 0.07, multiple_faces: r() < 0.03,
+        phone_detected: r() < 0.04, audio_speech: state.audioLevel > 0.04,
+        whisper_detected: 0.01 < state.audioLevel && state.audioLevel < 0.035,
+        hand_to_face: r() < 0.06, posture_suspicious: r() < 0.05,
+        face_count: 1, gaze_direction: r() < 0.9 ? 'center' : ['left', 'right', 'up'][Math.floor(r() * 3)],
+        head_yaw: (r() - 0.5) * 30, confidence: 0.85 + r() * 0.1,
+        tab_switch: state.tabSwitched, fullscreen_exit: state.fullscreenExited
+      };
+    }
+
+    function getSeverity(s) { return s >= 70 ? 'critical' : s >= 45 ? 'high' : s >= 20 ? 'medium' : 'low'; }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  LOGIN
+    // ═══════════════════════════════════════════════════════════════
+    function setRole(role) {
+      state.role = role;
+      document.querySelectorAll('.login-tab').forEach((t, i) => t.classList.toggle('active', i === (role === 'student' ? 0 : 1)));
+      document.getElementById('exam-code-group').style.display = role === 'student' ? 'block' : 'none';
+    }
+
+    async function handleLogin() {
+      const name = document.getElementById('login-name').value.trim();
+      const code = document.getElementById('login-code').value.trim().toUpperCase();
+      if (!name) { toast('Please enter your name', 'error'); return; }
+      if (state.role === 'student' && !code) { toast('Please enter the exam code', 'error'); return; }
+
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true; btn.innerHTML = '<div class="spinner"></div><span>AUTHENTICATING...</span>';
+
+      try {
+        const loginRes = await api('/api/login', 'POST', { name, role: state.role });
+        state.userId = loginRes.user_id;
+        state.userName = loginRes.name;
+        state.examCode = code;
+
+        if (state.role === 'teacher') {
+          toast(`Welcome, ${name}`, 'success');
+          document.getElementById('teacher-name-display').textContent = name;
+          showView('view-teacher');
+          startTeacherMonitor();
+        } else {
+          // Join exam first
+          const joinRes = await api('/api/join_test', 'POST', { student_id: state.userId, code });
+          state.examDurationMin = joinRes.duration_min || 30;
+          toast(`Joined: ${joinRes.exam_title}`, 'success');
+          // Show identity verification
+          showView('view-identity');
+          startIdentityCamera();
+        }
+      } catch (e) {
+        toast(e.message || 'Login failed', 'error');
+      } finally {
+        btn.disabled = false; btn.innerHTML = '<span>ENTER SYSTEM</span><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l6 6-6 6M1 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  IDENTITY VERIFICATION
+    // ═══════════════════════════════════════════════════════════════
+    let identityStream = null;
+    let identityCheckInterval = null;
+
+    async function startIdentityCamera() {
+      try {
+        identityStream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+        const vid = document.getElementById('identity-video');
+        vid.srcObject = identityStream;
+        document.getElementById('identity-status').textContent = 'CAMERA ACTIVE';
+        startIdentityChecks();
+      } catch (e) {
+        document.getElementById('identity-status').textContent = 'CAMERA UNAVAILABLE';
+        toast('Camera access denied — you can skip verification', 'warn');
+        document.getElementById('capture-btn').disabled = false;
+        document.getElementById('capture-label').textContent = 'CONTINUE WITHOUT CAMERA';
+      }
+    }
+
+    function startIdentityChecks() {
+      let readyFrames = 0;
+      identityCheckInterval = setInterval(() => {
+        // Simulate face detection checks
+        const ok = readyFrames > 10;
+        const great = readyFrames > 20;
+        setIdCheck('id-check-face', 'id-face-val', ok ? '✓ YES' : 'SCANNING...', ok);
+        setIdCheck('id-check-light', 'id-light-val', great ? '✓ GOOD' : readyFrames > 8 ? '✓ OK' : 'LOW', great);
+        setIdCheck('id-check-pos', 'id-pos-val', great ? '✓ CENTERED' : 'CENTER FACE', great);
+        setIdCheck('id-check-quality', 'id-quality-val', great ? '✓ HIGH' : ok ? 'MEDIUM' : '---', great);
+        if (great) {
+          document.getElementById('capture-btn').disabled = false;
+          clearInterval(identityCheckInterval);
+        }
+        readyFrames++;
+      }, 200);
+    }
+
+    function setIdCheck(cardId, valId, text, good) {
+      const card = document.getElementById(cardId);
+      const val = document.getElementById(valId);
+      val.textContent = text;
+      card.className = 'status-item' + (good ? '' : '');
+      val.style.color = good ? 'var(--green)' : 'var(--amber)';
+    }
+
+    async function captureIdentity() {
+      const btn = document.getElementById('capture-btn');
+      btn.disabled = true;
+      document.getElementById('capture-spinner').style.display = 'inline-block';
+      document.getElementById('capture-label').textContent = 'VERIFYING...';
+
+      try {
+        let frameB64 = '';
+        if (identityStream) {
+          const vid = document.getElementById('identity-video');
+          const canvas = document.getElementById('identity-canvas');
+          canvas.width = vid.videoWidth || 640; canvas.height = vid.videoHeight || 480;
+          canvas.getContext('2d').drawImage(vid, 0, 0);
+          frameB64 = canvas.toDataURL('image/jpeg', 0.85);
+        }
+        const res = await api('/api/verify_identity', 'POST', { student_id: state.userId, frame: frameB64 });
+        if (res.success) {
+          toast('Identity verified ✓', 'success');
+          stopIdentityCamera();
+          startExamFlow();
+        } else {
+          toast(res.message || 'Verification failed — retry', 'warn');
+          btn.disabled = false;
+        }
+      } finally {
+        document.getElementById('capture-spinner').style.display = 'none';
+        document.getElementById('capture-label').textContent = 'CAPTURE & VERIFY';
+      }
+    }
+
+    function skipIdentity() {
+      stopIdentityCamera();
+      startExamFlow();
+    }
+
+    function stopIdentityCamera() {
+      if (identityCheckInterval) clearInterval(identityCheckInterval);
+      if (identityStream) { identityStream.getTracks().forEach(t => t.stop()); identityStream = null; }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  EXAM FLOW
+    // ═══════════════════════════════════════════════════════════════
+    async function startExamFlow() {
+      try {
+        const res = await api('/api/start_exam', 'POST', { student_id: state.userId });
+        state.questions = res.questions || DEMO_QUESTIONS;
+        state.examDurationMin = res.duration_min || 30;
+        state.examStartTs = Date.now();
+        state.currentQ = 0;
+        state.answers = {};
+        state.riskScore = 0;
+
+        buildExamUI();
+        showView('view-exam');
+        document.getElementById('exam-title-bar').textContent = 'EXAM IN PROGRESS';
+        document.getElementById('proctor-live-badge').style.display = 'flex';
+
+        startExamTimer();
+        startProctoring();
+        setupAntiCheatListeners();
+        toast('Exam started — good luck!', 'success');
+      } catch (e) {
+        toast('Failed to start exam: ' + e.message, 'error');
+      }
+    }
+
+    function buildExamUI() {
+      const qs = state.questions;
+      const nav = document.getElementById('q-nav');
+      nav.innerHTML = qs.map((q, i) =>
+        `<button class="q-nav-btn ${i === 0 ? 'current' : ''}" id="qnav-${i}" onclick="goToQuestion(${i})">${i + 1}</button>`
+      ).join('');
+      updateAnsweredCount();
+      renderQuestion(0);
+    }
+
+    function renderQuestion(idx) {
+      state.currentQ = idx;
+      const q = state.questions[idx];
+      if (!q) return;
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const html = `
+    <div class="question-card" id="qcard-${idx}">
+      <div class="q-number">QUESTION ${idx + 1} OF ${state.questions.length}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-options">
+        ${q.opts.map((opt, oi) => `
+          <label class="q-option ${state.answers[q.id] === oi ? 'selected' : ''}" onclick="selectAnswer(${q.id},${oi},this)">
+            <input type="radio" name="q${q.id}" ${state.answers[q.id] === oi ? 'checked' : ''}>
+            <span class="q-opt-letter">${letters[oi]}</span>
+            <span>${opt}</span>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `;
+      document.getElementById('questions-container').innerHTML = html;
+      // Update nav
+      document.querySelectorAll('.q-nav-btn').forEach((b, i) => {
+        b.classList.toggle('current', i === idx);
+        b.classList.toggle('answered', state.answers[state.questions[i]?.id] !== undefined);
+      });
+      document.getElementById('prev-btn').disabled = idx === 0;
+      document.getElementById('next-btn').style.display = idx < state.questions.length - 1 ? '' : 'none';
+      document.getElementById('final-submit-btn').style.display = idx >= state.questions.length - 1 ? '' : 'none';
+    }
+
+    function selectAnswer(qid, optIdx, label) {
+      state.answers[qid] = optIdx;
+      document.querySelectorAll(`[onclick^="selectAnswer(${qid}"]`).forEach(el => el.classList.remove('selected'));
+      label.classList.add('selected');
+      updateAnsweredCount();
+      // Update nav btn
+      document.querySelectorAll('.q-nav-btn').forEach((b, i) => {
+        if (state.questions[i]?.id === qid) b.classList.add('answered');
+      });
+    }
+
+    function goToQuestion(idx) { renderQuestion(idx); }
+    function nextQuestion() { if (state.currentQ < state.questions.length - 1) renderQuestion(state.currentQ + 1); }
+    function prevQuestion() { if (state.currentQ > 0) renderQuestion(state.currentQ - 1); }
+    function updateAnsweredCount() {
+      const ans = Object.keys(state.answers).length;
+      document.getElementById('answered-count').textContent = `${ans} / ${state.questions.length}`;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  TIMER
+    // ═══════════════════════════════════════════════════════════════
+    function startExamTimer() {
+      const totalSecs = state.examDurationMin * 60;
+      state.timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - state.examStartTs) / 1000);
+        const remaining = totalSecs - elapsed;
+        if (remaining <= 0) { clearInterval(state.timerInterval); autoSubmit(); return; }
+        const m = Math.floor(remaining / 60), s = remaining % 60;
+        const el = document.getElementById('exam-timer');
+        el.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        el.classList.toggle('urgent', remaining < 300);
+      }, 1000);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  PROCTORING ENGINE (CLIENT-SIDE)
+    // ═══════════════════════════════════════════════════════════════
+    async function startProctoring() {
+      try {
+        // Start webcam
+        state.stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240, facingMode: 'user' }, audio: false });
+        const vid = document.getElementById('proctor-video');
+        vid.srcObject = state.stream;
+        // Start audio monitoring
+        await startAudioMonitor();
+      } catch (e) {
+        toast('Camera/mic access denied — simulation mode active', 'warn');
+      }
+      // Detection loop — every 1.5 seconds
+      state.proctorInterval = setInterval(runDetectionCycle, 1500);
+    }
+
+    async function startAudioMonitor() {
+      try {
+        state.audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        state.analyser = state.audioCtx.createAnalyser();
+        state.analyser.fftSize = 256;
+        const src = state.audioCtx.createMediaStreamSource(state.audioStream);
+        src.connect(state.analyser);
+        monitorAudioLevel();
+      } catch (e) { /* silent fail */ }
+    }
+
+    function monitorAudioLevel() {
+      if (!state.analyser) return;
+      const buf = new Uint8Array(state.analyser.frequencyBinCount);
+      function tick() {
+        state.analyser.getByteFrequencyData(buf);
+        const rms = Math.sqrt(buf.reduce((s, v) => s + v * v, 0) / buf.length) / 255;
+        state.audioLevel = rms;
+        updateAudioBars(rms);
+        requestAnimationFrame(tick);
+      }
+      tick();
+    }
+
+    function updateAudioBars(level) {
+      const bars = document.querySelectorAll('#audio-bars .ab');
+      const heights = [8, 12, 16, 12, 8];
+      bars.forEach((b, i) => {
+        const active = level > (i + 1) * 0.015;
+        b.style.background = active ? (level > 0.05 ? 'var(--red)' : level > 0.025 ? 'var(--amber)' : 'var(--green)') : 'var(--border)';
+        b.style.height = (active ? heights[i] + level * 60 : heights[i]) + 'px';
+      });
+    }
+
+    async function runDetectionCycle() {
+      // Capture frame
+      let frameB64 = '';
+      const vid = document.getElementById('proctor-video');
+      if (vid && vid.srcObject && vid.readyState >= 2) {
+        const canvas = document.getElementById('proctor-canvas');
+        canvas.width = vid.videoWidth || 320; canvas.height = vid.videoHeight || 240;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(vid, 0, 0);
+        frameB64 = canvas.toDataURL('image/jpeg', 0.6);
+        drawDetectionOverlay(ctx, canvas.width, canvas.height);
+      }
+
+      const payload = {
+        student_id: state.userId,
+        frame: frameB64,
+        audio_level: state.audioLevel,
+        tab_switch: state.tabSwitched,
+        fullscreen_exit: state.fullscreenExited,
+      };
+      state.tabSwitched = false;
+      state.fullscreenExited = false;
+
+      try {
+        const res = await api('/api/detect_events', 'POST', payload);
+        processDetectionResult(res);
+      } catch (e) {
+        // Use local simulation
+        const det = simulateDetection();
+        processDetectionResult({ detections: det, cheating_score: state.riskScore });
+      }
+    }
+
+    function drawDetectionOverlay(ctx, w, h) {
+      // Draw corner brackets
+      ctx.strokeStyle = 'rgba(0,255,136,0.6)';
+      ctx.lineWidth = 2;
+      const sz = 20;
+      [[10, 10], [w - 10 - sz, 10], [10, h - 10 - sz], [w - 10 - sz, h - 10 - sz]].forEach(([x, y]) => {
+        ctx.beginPath();
+        ctx.moveTo(x + sz, y); ctx.lineTo(x, y); ctx.lineTo(x, y + sz);
+        ctx.stroke();
+      });
+      // Gaze indicator
+      ctx.fillStyle = 'rgba(0,255,136,0.7)';
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.fillText('◉ MONITORING', 14, h - 14);
+    }
+
+    function processDetectionResult(res) {
+      const d = res.detections || res;
+      const score = res.cheating_score !== undefined ? res.cheating_score : state.riskScore;
+      state.riskScore = score;
+
+      // Update score delta locally for responsiveness
+      let delta = 0;
+      const weights = { gaze_away: 10, head_turned: 8, multiple_faces: 20, phone_detected: 25, audio_speech: 15, whisper_detected: 12, tab_switch: 18, fullscreen_exit: 18, hand_to_face: 5, posture_suspicious: 6 };
+      for (const [k, w] of Object.entries(weights)) if (d[k]) delta += w;
+      if (delta === 0) delta = -2;
+      state.riskScore = Math.max(0, Math.min(100, state.riskScore + delta * 0.3));
+
+      // Update UI
+      updateStatusPanel(d);
+      updateRiskMeter(state.riskScore);
+
+      // Trigger alerts
+      const alertDefs = [
+        ['gaze_away', '👁️', 'Looking Away', 'high'],
+        ['head_turned', '🔄', 'Head Turned', 'medium'],
+        ['multiple_faces', '👥', 'Multiple Faces', 'critical'],
+        ['phone_detected', '📱', 'Phone Detected', 'critical'],
+        ['audio_speech', '🗣️', 'Speech Detected', 'high'],
+        ['whisper_detected', '🤫', 'Whisper Detected', 'medium'],
+        ['tab_switch', '🔀', 'Tab Switch', 'high'],
+        ['fullscreen_exit', '⬜', 'Fullscreen Exit', 'high'],
+        ['hand_to_face', '✋', 'Hand Near Face', 'low'],
+        ['posture_suspicious', '🏃', 'Suspicious Posture', 'medium'],
+      ];
+      for (const [key, icon, label, severity] of alertDefs) {
+        if (d[key]) pushAlert(icon, label, severity);
+      }
+    }
+
+    function updateStatusPanel(d) {
+      const gd = d.gaze_direction || 'center';
+      const gazeOk = gd === 'center' && !d.gaze_away;
+      setStatus('stat-gaze', 'gaze-val', gazeOk ? 'CENTER' : gd.toUpperCase(), gazeOk ? '' : d.gaze_away ? 'danger' : 'warn');
+      const fc = d.face_count || 1;
+      setStatus('stat-faces', 'faces-val', fc + ' DETECTED', fc > 1 ? 'danger' : '');
+      setStatus('stat-posture', 'posture-val', d.posture_suspicious ? 'FLAGGED' : 'OK', d.posture_suspicious ? 'warn' : '');
+      const audOk = !d.audio_speech && !d.whisper_detected;
+      setStatus('stat-audio', 'audio-val', audOk ? 'CLEAR' : d.audio_speech ? 'SPEECH' : 'WHISPER', audOk ? '' : 'danger');
+    }
+
+    function setStatus(cardId, valId, text, cls) {
+      const card = document.getElementById(cardId);
+      const val = document.getElementById(valId);
+      if (!card || !val) return;
+      val.textContent = text;
+      card.className = 'status-item' + (cls ? ' ' + cls : '');
+    }
+
+    function updateRiskMeter(score) {
+      const bar = document.getElementById('risk-bar');
+      const disp = document.getElementById('risk-score-display');
+      if (!bar || !disp) return;
+      bar.style.width = score + '%';
+      bar.style.background = score >= 70 ? 'var(--red)' : score >= 45 ? 'var(--amber)' : score >= 20 ? '#ffdd00' : 'var(--green)';
+      disp.textContent = Math.round(score);
+      disp.style.color = score >= 70 ? 'var(--red)' : score >= 45 ? 'var(--amber)' : 'var(--green)';
+    }
+
+    function pushAlert(icon, label, severity) {
+      const ts = new Date().toLocaleTimeString('en', { hour12: false });
+      state.proctorAlerts.unshift({ icon, label, severity, ts });
+      if (state.proctorAlerts.length > 20) state.proctorAlerts.pop();
+      const container = document.getElementById('proctor-alerts');
+      if (!container) return;
+      container.innerHTML = state.proctorAlerts.slice(0, 8).map(a =>
+        `<div class="alert-mini-item ${a.severity}"><span>${a.icon}</span><span>${a.label}</span><span style="margin-left:auto;color:var(--text-muted);font-size:9px;">${a.ts}</span></div>`
+      ).join('');
+    }
+
+    // ── Anti-cheat event listeners ────────────────────────────────
+    function setupAntiCheatListeners() {
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) { state.tabSwitched = true; toast('⚠ Tab switch detected!', 'warn'); }
+      });
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) { state.fullscreenExited = true; }
+      });
+      document.addEventListener('contextmenu', e => e.preventDefault());
+      document.addEventListener('keydown', e => {
+        if (e.key === 'PrintScreen') { toast('Screen capture blocked!', 'error'); e.preventDefault(); }
+        if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'a', 'u', 's'].includes(e.key.toLowerCase())) e.preventDefault();
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['i', 'j', 'c'].includes(e.key.toLowerCase()))) e.preventDefault();
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  EXAM SUBMISSION
+    // ═══════════════════════════════════════════════════════════════
+    function confirmSubmit() {
+      const ans = Object.keys(state.answers).length;
+      const total = state.questions.length;
+      if (ans < total) {
+        if (!confirm(`You have answered ${ans} of ${total} questions. Submit anyway?`)) return;
+      }
+      submitExam();
+    }
+
+    function autoSubmit() { toast('Time is up! Submitting...', 'warn'); submitExam(); }
+
+    async function submitExam() {
+      stopProctoring();
+      try {
+        const res = await api('/api/submit_exam', 'POST', { student_id: state.userId, answers: state.answers });
+        showResults(res);
+      } catch (e) {
+        // Fallback result
+        const correct = Object.values(state.answers).length;
+        showResults({ correct, total: state.questions.length, score_pct: (correct / state.questions.length * 100).toFixed(1), cheating_score: Math.round(state.riskScore) });
+      }
+    }
+
+    function showResults(res) {
+      document.getElementById('result-title').textContent = 'Exam Completed';
+      document.getElementById('result-score').textContent = res.score_pct + '%';
+      document.getElementById('result-score-sub').textContent = `${res.correct} / ${res.total} Correct`;
+      document.getElementById('result-correct').textContent = res.correct;
+      document.getElementById('result-wrong').textContent = res.total - res.correct;
+
+      const integ = Math.max(0, 100 - Math.round(res.cheating_score || state.riskScore));
+      document.getElementById('result-integrity').textContent = integ + '%';
+      document.getElementById('result-integrity').style.color = integ > 80 ? 'var(--green)' : integ > 60 ? 'var(--amber)' : 'var(--red)';
+
+      const sev = getSeverity(res.cheating_score || state.riskScore);
+      const banners = { low: ['🛡️ INTEGRITY: EXCELLENT', 'var(--green-bg)', 'var(--green)'], medium: ['⚠️ INTEGRITY: MODERATE', 'var(--amber-bg)', 'var(--amber)'], high: ['🚨 INTEGRITY: COMPROMISED', 'rgba(255,140,0,0.1)', 'var(--amber)'], critical: ['🚨 INTEGRITY: CRITICAL', 'var(--red-bg)', 'var(--red)'] };
+      const [msg, bg, col] = banners[sev] || banners.low;
+      const banner = document.getElementById('result-integrity-banner');
+      banner.textContent = msg; banner.style.background = bg; banner.style.color = col;
+
+      if (state.proctorAlerts.length > 0) {
+        document.getElementById('result-alerts-section').innerHTML = `
+      <div style="font-size:11px;font-family:var(--font-mono);color:var(--text-dim);margin-bottom:8px;letter-spacing:0.08em;">SECURITY EVENTS (${state.proctorAlerts.length})</div>
+      ${state.proctorAlerts.slice(0, 5).map(a => `<div class="alert-mini-item ${a.severity}">${a.icon} ${a.label} <span style="margin-left:auto;color:var(--text-muted)">${a.ts}</span></div>`).join('')}
+    `;
+      }
+      showView('view-results');
+    }
+
+    function stopProctoring() {
+      if (state.proctorInterval) clearInterval(state.proctorInterval);
+      if (state.timerInterval) clearInterval(state.timerInterval);
+      if (state.stream) state.stream.getTracks().forEach(t => t.stop());
+      if (state.audioStream) state.audioStream.getTracks().forEach(t => t.stop());
+      if (state.audioCtx) state.audioCtx.close().catch(() => { });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  TEACHER DASHBOARD
+    // ═══════════════════════════════════════════════════════════════
+    function startTeacherMonitor() {
+      loadMonitorData();
+      state.monitorInterval = setInterval(loadMonitorData, 4000);
+    }
+
+    async function loadMonitorData() {
+      try {
+        const res = await api(`/api/monitor?teacher_id=${state.userId}`);
+        updateTeacherDashboard(res);
+        // Also load alerts
+        const alertRes = await api('/api/alerts?limit=10');
+        updateAlertFeed(alertRes.alerts || []);
+      } catch (e) { /* silent */ }
+    }
+
+    function updateTeacherDashboard(data) {
+      document.getElementById('stat-total').textContent = data.total_students || 0;
+      document.getElementById('stat-active').textContent = (data.students || []).filter(s => s.exam_started && !s.exam_submitted).length;
+      document.getElementById('stat-avg').textContent = Math.round(data.avg_cheating_score || 0);
+      document.getElementById('stat-high').textContent = data.high_risk_count || 0;
+      document.getElementById('students-count-badge').textContent = `${data.total_students || 0} ACTIVE`;
+
+      const grid = document.getElementById('students-grid');
+      const students = data.students || [];
+      if (students.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);font-family:var(--font-mono);font-size:12px;">No students enrolled yet. Share the exam code.</div>';
+        return;
+      }
+      grid.innerHTML = students.map(s => buildStudentCard(s)).join('');
+    }
+
+    function buildStudentCard(s) {
+      const sev = s.severity || getSeverity(s.cheating_score);
+      const scoreColor = sev === 'critical' ? 'var(--red)' : sev === 'high' ? 'var(--amber)' : sev === 'medium' ? '#ffdd00' : 'var(--green)';
+      const status = s.exam_submitted ? 'SUBMITTED' : s.exam_started ? 'IN EXAM' : 'WAITING';
+      const statusColor = s.exam_submitted ? 'var(--text-dim)' : s.exam_started ? 'var(--green)' : 'var(--amber)';
+      return `
+    <div class="student-card risk-${sev}">
+      <div class="student-card-header">
+        <div class="student-name">${s.name}</div>
+        <span class="badge ${sev === 'critical' ? 'badge-red' : sev === 'high' ? 'badge-amber' : sev === 'medium' ? 'badge-amber' : 'badge-green'}">${sev.toUpperCase()}</span>
+      </div>
+      <div class="student-score-bar">
+        <div class="student-score-fill" style="width:${s.cheating_score}%;background:${scoreColor};"></div>
+      </div>
+      <div class="student-meta">
+        <span>RISK: <span style="color:${scoreColor};">${Math.round(s.cheating_score)}</span></span>
+        <span>ALERTS: ${s.alerts_count || 0}</span>
+        <span style="margin-left:auto;color:${statusColor};">${status}</span>
+      </div>
+    </div>
+  `;
+    }
+
+    function updateAlertFeed(alerts) {
+      const feed = document.getElementById('alert-feed');
+      if (!alerts || alerts.length === 0) {
+        feed.innerHTML = '<p style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">No alerts yet</p>';
+        return;
+      }
+      feed.innerHTML = alerts.slice(0, 6).map(a => `
+    <div class="alert-item ${a.severity || ''}">
+      <span class="alert-icon">${getAlertIcon(a.type)}</span>
+      <div>
+        <div class="alert-name">${a.student_name || 'Student'}</div>
+        <div class="alert-detail">${a.detail || a.type}</div>
+        <div class="alert-time">${formatTs(a.ts)}</div>
+      </div>
+    </div>
+  `).join('');
+    }
+
+    function getAlertIcon(type) {
+      const m = { gaze_away: '👁️', multiple_faces: '👥', phone_detected: '📱', audio_speech: '🗣️', tab_switch: '🔀', posture_suspicious: '🏃', head_turned: '🔄', hand_to_face: '✋', whisper_detected: '🤫', fullscreen_exit: '⬜' };
+      return m[type] || '⚠️';
+    }
+
+    function formatTs(ts) {
+      if (!ts) return '';
+      try { return new Date(ts).toLocaleTimeString('en', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+      catch (e) { return ts; }
+    }
+
+    async function createExam() {
+      const title = document.getElementById('exam-title-input').value.trim() || 'ProctorAI Exam';
+      const duration = parseInt(document.getElementById('exam-duration-input').value) || 30;
+      try {
+        const res = await api('/api/create_test', 'POST', { teacher_id: state.userId, title, duration });
+        document.getElementById('active-exam-code').textContent = res.code;
+        document.getElementById('exam-title-display').textContent = res.title;
+        document.getElementById('no-exam-msg').classList.add('hidden');
+        document.getElementById('exam-code-display').classList.remove('hidden');
+        toast(`Exam created! Code: ${res.code}`, 'success');
+        showTab('students');
+      } catch (e) { toast('Failed to create exam: ' + e.message, 'error'); }
+    }
+
+    function copyExamCode() {
+      const code = document.getElementById('active-exam-code').textContent;
+      navigator.clipboard.writeText(code).then(() => toast('Exam code copied!', 'success')).catch(() => toast('Code: ' + code, 'info'));
+    }
+
+    function showCreateExam() { showTab('create-exam'); }
+
+    function showTab(name) {
+      document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', b.onclick.toString().includes(name)));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+    }
+
+    async function loadAllAlerts() {
+      const res = await api('/api/alerts?limit=50');
+      const container = document.getElementById('all-alerts-list');
+      const alerts = res.alerts || [];
+      if (alerts.length === 0) {
+        container.innerHTML = '<p style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">No alerts recorded yet.</p>';
+        return;
+      }
+      container.innerHTML = alerts.map(a => `
+    <div class="alert-item ${a.severity || ''}">
+      <span class="alert-icon" style="font-size:16px;">${getAlertIcon(a.type)}</span>
+      <div style="flex:1;">
+        <div style="display:flex;justify-content:space-between;">
+          <span class="alert-name">${a.student_name || a.student_id || 'Student'}</span>
+          <span class="alert-time">${formatTs(a.ts)}</span>
+        </div>
+        <div class="alert-detail">${a.detail || a.type}</div>
+        <div style="margin-top:3px;"><span class="badge ${a.severity === 'critical' ? 'badge-red' : a.severity === 'high' ? 'badge-amber' : 'badge-cyan'}">${a.severity || 'info'}</span></div>
+      </div>
+    </div>
+  `).join('');
+    }
+
+    function logout() {
+      stopProctoring();
+      if (state.monitorInterval) clearInterval(state.monitorInterval);
+      if (state.sseSource) state.sseSource.close();
+      state = { role: 'student', userId: null, userName: null, examCode: null, questions: [], answers: {}, currentQ: 0, examStartTs: null, examDurationMin: 30, riskScore: 0, stream: null, proctorInterval: null, timerInterval: null, sseSource: null, monitorInterval: null, tabSwitched: false, fullscreenExited: false, audioCtx: null, analyser: null, audioStream: null, audioLevel: 0, proctorAlerts: [], faceDetectedFrames: 0, faceAbsentFrames: 0 };
+      document.getElementById('login-name').value = '';
+      document.getElementById('login-code').value = '';
+      showView('view-login');
+      toast('Session ended', 'info');
+    }
+
+    // Mock student data for teacher demo
+    function generateMockStudents() {
+      return [
+        { id: 'S1', name: 'Priya Sharma', cheating_score: 72, severity: 'critical', exam_started: true, exam_submitted: false, alerts_count: 8 },
+        { id: 'S2', name: 'Rahul Mehta', cheating_score: 38, severity: 'medium', exam_started: true, exam_submitted: false, alerts_count: 3 },
+        { id: 'S3', name: 'Anita Patel', cheating_score: 12, severity: 'low', exam_started: true, exam_submitted: false, alerts_count: 1 },
+        { id: 'S4', name: 'Vikram Singh', cheating_score: 55, severity: 'high', exam_started: true, exam_submitted: false, alerts_count: 5 },
+        { id: 'S5', name: 'Deepa Nair', cheating_score: 5, severity: 'low', exam_started: false, exam_submitted: false, alerts_count: 0 },
+      ];
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  DEMO QUESTIONS (offline fallback)
+    // ═══════════════════════════════════════════════════════════════
+    const DEMO_QUESTIONS = [
+      { id: 1, q: "What is the time complexity of binary search?", opts: ["O(n)", "O(log n)", "O(n²)", "O(1)"], ans: 1 },
+      { id: 2, q: "Which data structure uses LIFO ordering?", opts: ["Queue", "Stack", "Heap", "Graph"], ans: 1 },
+      { id: 3, q: "What does HTTP stand for?", opts: ["HyperText Transfer Protocol", "High Transfer Text Protocol", "Hyper Transfer Technology Protocol", "HyperText Technology Process"], ans: 0 },
+      { id: 4, q: "Which sorting algorithm has the best average-case complexity?", opts: ["Bubble Sort", "Selection Sort", "Quick Sort", "Insertion Sort"], ans: 2 },
+      { id: 5, q: "What does SQL stand for?", opts: ["Structured Query Language", "Simple Query Language", "Standard Query Logic", "Stored Query Link"], ans: 0 },
+      { id: 6, q: "Which layer of the OSI model handles routing?", opts: ["Data Link", "Transport", "Network", "Session"], ans: 2 },
+      { id: 7, q: "What is the result of 2⁸?", opts: ["128", "256", "512", "64"], ans: 1 },
+      { id: 8, q: "Which keyword is used for inheritance in Python?", opts: ["extends", "inherits", "class with parentheses", "implements"], ans: 2 },
+      { id: 9, q: "What does RAM stand for?", opts: ["Random Access Memory", "Read Access Memory", "Rapid Application Memory", "Random Application Module"], ans: 0 },
+      { id: 10, q: "Which protocol is used to send email?", opts: ["FTP", "SMTP", "HTTP", "SSH"], ans: 1 },
+      { id: 11, q: "What is a deadlock in OS?", opts: ["Process runs too fast", "Mutual blocking of processes", "Memory overflow", "CPU scheduling issue"], ans: 1 },
+      { id: 12, q: "Which is NOT a primitive data type in Java?", opts: ["int", "float", "String", "boolean"], ans: 2 },
+      { id: 13, q: "What does DNS resolve?", opts: ["IP to MAC", "Domain names to IPs", "URLs to HTML", "Ports to protocols"], ans: 1 },
+      { id: 14, q: "Which Python function returns the length of a list?", opts: ["size()", "length()", "len()", "count()"], ans: 2 },
+      { id: 15, q: "What is encapsulation in OOP?", opts: ["Hiding implementation details", "Inheriting from parent", "Overriding methods", "Creating multiple objects"], ans: 0 },
+      { id: 16, q: "Which data structure is used for BFS traversal?", opts: ["Stack", "Queue", "Array", "Tree"], ans: 1 },
+      { id: 17, q: "What is a foreign key in SQL?", opts: ["Primary key of same table", "References another table's primary key", "An encrypted key", "A composite key"], ans: 1 },
+      { id: 18, q: "What does IDE stand for?", opts: ["Integrated Development Environment", "Internal Development Engine", "Interface Design Editor", "Integrated Design Engine"], ans: 0 },
+      { id: 19, q: "Which symbol is used for comments in Python?", opts: ["//", "/*", "#", "--"], ans: 2 },
+      { id: 20, q: "What is the default port for HTTPS?", opts: ["80", "8080", "443", "22"], ans: 2 },
+    ];
+
+    // ── Init ──────────────────────────────────────────────────────
+    document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('view-login').classList.contains('active')) handleLogin(); });
+    setRole('student');
+  </script>
+</body>
+
+</html>
